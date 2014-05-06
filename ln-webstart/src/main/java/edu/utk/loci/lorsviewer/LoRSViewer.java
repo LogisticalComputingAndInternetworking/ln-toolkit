@@ -16,9 +16,9 @@ import static java.nio.file.StandardOpenOption.*;
 public class LoRSViewer
 {
     /* Class constants */
-    final private String SCRIPT_FILE = "/lat_display.tcl";
-    final private String MAP_FILE    = "/newusa_55_-130_25_-60_.gif";
-    final private String CONFIG_FILE    = "/newusa.cfg";
+    final private String SCRIPT_FILE = "/edu/utk/loci/lorsviewer/lat_display.tcl";
+    final private String MAP_FILE    = "/edu/utk/loci/lorsviewer/newusa_55_-130_25_-60_.gif";
+    final private String CONFIG_FILE    = "/edu/utk/loci/lorsviewer/newusa.cfg";
     
     /* Instance variables */
     final private int port;
