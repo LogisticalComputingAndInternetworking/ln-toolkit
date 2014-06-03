@@ -2,6 +2,7 @@
 
 package edu.utk.cs.loci.exnode;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import org.w3c.dom.Element;
@@ -11,7 +12,9 @@ import edu.utk.cs.loci.ibp.Allocation;
 import edu.utk.cs.loci.ibp.Capability;
 import edu.utk.cs.loci.ibp.IBPException;
 import edu.utk.cs.loci.ibp.Log;
+import edu.utk.cs.loci.lodnclient.LoDNClient;
 import edu.utk.cs.loci.transfer.TransferThread;
+import edu.utk.loci.lorsviewer.LoRSViewer;
 
 public class Mapping extends MetadataContainer
 {
@@ -196,14 +199,35 @@ public class Mapping extends MetadataContainer
     public byte[] read( int timeout, long size, long readOffset,
         int writeOffset ) throws ReadException
     {
+    	String depotID = String.format("%s:%d", allocation.getDepot().getHost(), 
+  			  									allocation.getDepot().getPort());
+    	
+    	LoRSViewer lorsViewer = LoDNClient.getLorsViewer();
+    	
+    	System.out.printf("LorsViewer in mapping is %s\n", lorsViewer);
+    	
+    	
+    	
+    	long loadOffset = -1;
+    	long loadLength = -1;
+    	
         try
         {
+        	if(lorsViewer != null)
+        	{
+        		lorsViewer.waitTilReady();
+        	}
+        	
+        	System.out.printf("Done waiting on viewer\n");
+        	
 //            long allocationOffset = getAllocationOffset(); // Always 0 !
 //            long allocationLength = getAllocationLength(); // == logical_length if no function applied
 
+        	
+			  
             boolean isIdentityFunction = this.getFunction().getName().equals( "identity" );
-            long loadOffset = getAllocationOffset() + readOffset;
-            long loadLength = size;
+            loadOffset = getAllocationOffset() + readOffset;
+            loadLength = size;
             
             if ( !isIdentityFunction )
             { // If it is NOT Identity function
@@ -236,9 +260,24 @@ public class Mapping extends MetadataContainer
             
             byte[] rawBuf = new byte[(int) loadLength];
 
+            
             DEBUG.println( "Mapping: Request Load at offset: " + readOffset
                 + ", " + loadLength + " Bytes." );
 
+            if(lorsViewer != null)
+            {
+            	try
+            	{
+            		lorsViewer.drawMapping(this.toString(), loadOffset, loadLength, depotID, "");
+            		lorsViewer.drawMappingDLBuffer(loadOffset, loadLength);
+            		lorsViewer.drawMappingLoadArrow(depotID, loadOffset, loadLength);
+            		
+            	}catch(IOException e)
+            	{
+            		e.printStackTrace();
+            	}
+            }
+            
             int bytesRead = allocation.load(
                 rawBuf, timeout, loadLength, loadOffset, writeOffset );
 
@@ -246,6 +285,7 @@ public class Mapping extends MetadataContainer
                 + rawBuf.length + ", bytesRead=" + bytesRead; 
             DEBUG.println( executeStatus );
 
+            
             Thread curThread = Thread.currentThread();
             boolean monitorOn = false;
             TransferThread transferThread = null;
@@ -272,14 +312,38 @@ public class Mapping extends MetadataContainer
             {
                 transferThread.setStatus( "Done reading and executing function." );
             }
-
-            return (outBuf);
-        }
-        catch ( Exception e )
+            
+            
+            if(lorsViewer != null)
+            {
+            	try
+            	{
+            		lorsViewer.drawMappingDLSlice(depotID, loadOffset, loadLength);
+            	}catch(IOException e)
+            	{
+            		e.printStackTrace();
+            	}
+            }
+            
+            return outBuf;
+            
+        }catch(Exception e)
         {
-            //e.printStackTrace();
-            //DEBUG.error("Mapping60: e = " + e.getMessage());
+        	e.printStackTrace();
             throw (new ReadException( e.getMessage() ));
+            
+        }finally
+        {
+        	if(lorsViewer != null)
+        	{
+        		try 
+        		{
+        			lorsViewer.deleteLoadArrow(depotID, loadOffset, loadLength);
+        		}catch(IOException e) 
+        		{
+        			e.printStackTrace();
+        		} 	
+        	}
         }
     }
 

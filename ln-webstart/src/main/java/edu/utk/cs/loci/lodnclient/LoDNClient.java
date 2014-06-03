@@ -46,6 +46,7 @@ import edu.utk.cs.loci.exnode.Mapping;
 import edu.utk.cs.loci.exnode.StringMetadata;
 import edu.utk.loci.lodn.client.LoDNClientException;
 import edu.utk.loci.lodn.client.LoDNSessionChannel;
+import edu.utk.loci.lorsviewer.LoRSViewer;
 
 public class LoDNClient
 {
@@ -85,6 +86,7 @@ public class LoDNClient
     JMenu fileMenu;
     JMenu helpMenu;
     JCheckBox closeAfterFinishedCheck;
+    JCheckBox useMapViewerCheckBox;
 
     Exnode[] exnodes = null;
     
@@ -92,7 +94,8 @@ public class LoDNClient
     private String lStorePassword = "";
     private String downloadedBaseName = ""; 
     private boolean closeAfterTransfer = false;
-
+    private boolean useMapViewer = false;
+    
     public static final String LOGIN_ARGUMENT = "login:";
     public static final String PASSWORD_ARGUMENT = "password:";
     public static final String FILE_ARGUMENT = "file:";
@@ -101,9 +104,25 @@ public class LoDNClient
     public static final String LSTORE_URI_PREFIX = LSTORE_PREFIX + "//";
     public static final String LODN_PREFIX = "lodn://";
     
+    
+    final private static InheritableThreadLocal<LoRSViewer> lorsViewers 
+    	= new InheritableThreadLocal<>();
+    
+    
+    public static void setLorsViewer(LoRSViewer lorsViewer)
+    {
+    	lorsViewers.set(lorsViewer);
+    }
+    
+    public static LoRSViewer getLorsViewer()
+    {
+    	return lorsViewers.get();
+    }
+    	
     public LoDNClient()
     {
-        connectionsLabel = new JLabel( "Number of connections:" );
+        connectionsLabel = new JLabel(
+        	"                         Number of connections:" );
         connectionsLabel.setLabelFor( connectionsCombo );
 
         sizeLabel = new JLabel( "Transfer block size:" );
@@ -130,11 +149,22 @@ public class LoDNClient
                     }
                 }
             } );
+        
         closeAfterFinishedCheck = new JCheckBox("Close after completing download", isCloseAfterTransfer());
         closeAfterFinishedCheck.addActionListener(new ActionListener() {
 		
 			public void actionPerformed(ActionEvent e) {
 				setCloseAfterTransfer(closeAfterFinishedCheck.isSelected());
+			}
+		});
+        
+        useMapViewerCheckBox =   new JCheckBox("Display map viewer", useMapViewer());
+        useMapViewerCheckBox.addActionListener(new ActionListener() 
+        {	
+			@Override
+			public void actionPerformed(ActionEvent e) 
+			{
+				useMapViewer(useMapViewerCheckBox.isSelected());
 			}
 		});
 
@@ -434,7 +464,6 @@ public class LoDNClient
         	client.exnodes = new Exnode[files.size()];
             setExnodes(client, files);
             updateGUI(client, files);
-
         }
 
         JFrame frame = new JFrame( "LoDN Client" );
@@ -476,7 +505,12 @@ public class LoDNClient
 		if (client.getDownloadedBaseName().equals("")) {
 			if (isLstoreUri(aFile)) {
 				out = FileSpecifierFactory.getFileSpecifier(aFile.substring(LSTORE_URI_PREFIX.length()), getLStoreLoginId()).getFilename();
-			} else {
+			
+			}else if(isLoDNURI(aFile)) 
+			{
+				out = aFile.substring(aFile.lastIndexOf('/')+1);
+			}else 
+			{
 				out = "";
 			}
 		} else {
@@ -543,5 +577,15 @@ public class LoDNClient
 
 	public void setCloseAfterTransfer(boolean closeAfterTransfer) {
 		this.closeAfterTransfer = closeAfterTransfer;
+	}
+	
+	public void useMapViewer(boolean useMapViewer)
+	{
+		this.useMapViewer = useMapViewer;
+	}
+	
+	public boolean useMapViewer()
+	{
+		return this.useMapViewer;
 	}
 }

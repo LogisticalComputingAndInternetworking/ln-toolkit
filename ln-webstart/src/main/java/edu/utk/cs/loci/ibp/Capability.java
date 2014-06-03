@@ -38,11 +38,11 @@ public class Capability
         return (fields[3]);
     }
 
-    public int getWRMKey()
+    public String getWRMKey()
     {
         String str = uri.toString();
         String[] fields = str.split( "/" );
-        return (Integer.parseInt( fields[4] ));
+        return fields[4];
     }
 
     public String getType()

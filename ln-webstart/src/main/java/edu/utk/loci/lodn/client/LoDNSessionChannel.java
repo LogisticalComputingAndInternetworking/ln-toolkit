@@ -13,6 +13,7 @@ import java.util.concurrent.Future;
 
 import com.google.protobuf.GeneratedMessage;
 
+import edu.utk.cs.loci.exnode.IdentityFunction;
 import edu.utk.cs.loci.exnode.IntegerMetadata;
 import edu.utk.cs.loci.exnode.Mapping;
 import edu.utk.cs.loci.ibp.Allocation;
@@ -246,21 +247,25 @@ public class LoDNSessionChannel
 												exnodeMapping.setAllocation(
 													new Allocation(
 														new Capability(
-															String.format("ibp://%s:%d/%s/%s/READ", 
+															String.format("ibp://%s:%d/%s#%s/READ", 
 																mapping.getHost(), mapping.getPort(), mapping.getRid(), mapping.getReadkey())),
 														new Capability(
-															String.format("ibp://%s:%d/%s/%s/WRITE", 
+															String.format("ibp://%s:%d/%s#%s/WRITE", 
 																mapping.getHost(), mapping.getPort(), mapping.getRid(), mapping.getWritekey())),
 														new Capability(
-															String.format("ibp://%s:%d/%s/%s/MANAGE", 
+															String.format("ibp://%s:%d/%s#%s/MANAGE", 
 																	mapping.getHost(), mapping.getPort(), mapping.getRid(), mapping.getManagekey()))));
 													
+												
+												
 												/* Adds the required metadata to the mapping */
 												exnodeMapping.addMetadata(new IntegerMetadata("alloc_length", mapping.getAllocLength()));
 												exnodeMapping.addMetadata(new IntegerMetadata("alloc_offset", mapping.getAllocOffset()));
 												exnodeMapping.addMetadata(new IntegerMetadata("e2e_blocksize", mapping.getE2EBlocksize()));
 												exnodeMapping.addMetadata(new IntegerMetadata("exnode_offset", mapping.getExnodeOffset()));
 												exnodeMapping.addMetadata(new IntegerMetadata("logical_length", mapping.getLogicalLength()));
+												
+												exnodeMapping.setFunction(new IdentityFunction());
 												
 												mappings.add(exnodeMapping);
 											}	

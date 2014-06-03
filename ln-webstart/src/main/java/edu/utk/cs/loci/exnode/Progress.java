@@ -7,6 +7,10 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.swing.SwingUtilities;
+
+import com.sun.org.apache.xalan.internal.xsltc.compiler.sym;
+
 import edu.utk.cs.loci.ibp.Log;
 
 public class Progress
@@ -23,8 +27,7 @@ public class Progress
 
     private String statusMsg;
 
-    private static ProgressEvent e = new ProgressEvent();
-
+    
     public Progress( long length )
     {
         this.length = length;
@@ -37,114 +40,141 @@ public class Progress
         this.statusMsg = "";
     }
 
-    public synchronized void addProgressListener( ProgressListener listener )
+    public void addProgressListener( ProgressListener listener )
     {
 
         DEBUG.println( "addProgressListener!" );
         listeners.add( listener );
     }
 
-    public synchronized void update( long progress )
+    public void update( long progress )
     {
         this.update( progress, "Continuing ..." );
     }
 
-    public synchronized void update( long progress, String statusMsg )
+    public void update( long progress, String statusMsg )
     {
+    	Long remaining = null;
 
-        this.statusMsg = statusMsg;
+    	synchronized(this) 
+    	{
+    		this.statusMsg = statusMsg;
 
-        total += progress;
+    		total += progress;
 
-        percentComplete = ( (double) total / (double) length ) * 100.0f;
+    		percentComplete = ( (double) total / (double) length ) * 100.0f;
 
-        Date now = new Date();
-        double elapsed = (now.getTime() - start.getTime()) / 1000.0;
+    		Date now = new Date();
+    		double elapsed = (now.getTime() - start.getTime()) / 1000.0;
 
-        throughput = (total * 8.0) / 1024.0 / 1024.0 / elapsed;
+    		throughput = (total * 8.0) / 1024.0 / 1024.0 / elapsed;
 
-        long remaining = length - total;
-        eta = (double) remaining * elapsed / (double) total;
+    		remaining = length - total;
+    		eta = (double) remaining * elapsed / (double) total;
 
-        DEBUG.println( "Exnode Progress: " + elapsed + "s, " + total
-            + " bytes = " + (throughput / 8.0) + "MB/s, eta=" + eta + "s" );
 
-        if ( remaining != 0 )
-        {
-            fireProgressChangedEvent();
-            DEBUG.println( "Progress (update):01 remaining = " + remaining );
-        }
-        else
-        {
-            fireProgressChangedEvent();
-            fireProgressDoneEvent();
-            DEBUG.println( "Progress (update):FINAL remaining = " + remaining );
-        }
+    		DEBUG.println( "Exnode Progress: " + elapsed + "s, " + total
+    				+ " bytes = " + (throughput / 8.0) + "MB/s, eta=" + eta + "s" );
+    	}
+
+    	if(remaining != 0)
+    	{
+    		fireProgressChangedEvent();
+    		DEBUG.println( "Progress (update):01 remaining = " + remaining );
+    	}
+    	else
+    	{
+    		fireProgressChangedEvent();
+    		fireProgressDoneEvent();
+    		DEBUG.println( "Progress (update):FINAL remaining = " + remaining );
+    	}
 
     }
 
-    public void fireProgressChangedEvent()
+    public synchronized void fireProgressChangedEvent()
     {
-        Iterator<ProgressListener> i = listeners.iterator();
-
-        while ( i.hasNext() )
+        final ProgressEvent e = new ProgressEvent(statusMsg, total, 
+    			percentComplete, throughput, eta);
+        
+        for(final ProgressListener progressListener : listeners)
         {
-            ProgressListener l = i.next();
-            l.progressUpdated( e );
+        	SwingUtilities.invokeLater(new Runnable() 
+        	{
+				@Override
+				public void run() 
+				{
+					progressListener.progressUpdated(e);		
+				}
+			});
+        	
         }
     }
 
-    public void fireProgressDoneEvent()
+    public synchronized void fireProgressDoneEvent()
     {
+    	
         try
         {
-            Iterator<ProgressListener> i = listeners.iterator();
-
-            //if(!i.hasNext()) DEBUG.error("12: fireProgressDoneEvent: Y A RIEN DU TOUT! i = " + i);
-            while ( i.hasNext() )
+            final ProgressEvent e = new ProgressEvent(statusMsg, total, 
+        			percentComplete, throughput, eta);
+            
+            for(final ProgressListener progressListener : listeners)
             {
-                ProgressListener l = i.next();
-                l.progressDone( e );
+            	SwingUtilities.invokeLater(new Runnable() 
+            	{
+					@Override
+					public void run() 
+					{
+						progressListener.progressDone( e );
+					}
+				});
             }
 
-        }
-        catch ( Exception excpt )
+        }catch ( Exception excpt )
         {
             DEBUG.error( "fireProgressDoneEvent: " + excpt );
         }
     }
 
-    public void fireProgressErrorEvent()
+    public synchronized void fireProgressErrorEvent()
     {
-        Iterator<ProgressListener> i = listeners.iterator();
-        while ( i.hasNext() )
+    	final ProgressEvent e = new ProgressEvent(statusMsg, total, 
+    			percentComplete, throughput, eta);
+        
+        for(final ProgressListener progressListener : listeners)
         {
-            ProgressListener l = i.next();
-            l.progressError( e );
+        	SwingUtilities.invokeLater(new Runnable() 
+        	{
+				@Override
+				public void run() 
+				{
+					progressListener.progressError( e );
+				}
+        	});
         }
     }
 
-    public synchronized long getProgress()
+    public long getProgress()
     {
         return (total);
     }
 
-    public synchronized double getPercentComplete()
+    public double getPercentComplete()
     {
         return (percentComplete);
     }
 
-    public synchronized double getThroughput()
+    public double getThroughput()
     {
         return (throughput);
     }
 
-    public synchronized double getETA()
+    public double getETA()
     {
         return (eta);
     }
 
-    public synchronized String getStatusMsg()
+    public String getStatusMsg()
     {
         return this.statusMsg;
     }

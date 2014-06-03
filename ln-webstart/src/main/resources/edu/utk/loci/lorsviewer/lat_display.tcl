@@ -375,6 +375,7 @@ proc draw_depots { } {
   set height [ image height us ]
   set height [ expr $height ]
 
+  puts stderr "draw_depots 1"
 # create a stacking context to which Arrows Mappinbs and borders can be
 # 'raise'd or 'lower'd
   .mv.c create line 0 0 1 1 -fill black -tag e
@@ -382,18 +383,23 @@ proc draw_depots { } {
   .mv.c create line 0 0 1 1 -fill black -tag c
   .mv.c create line 0 0 1 1 -fill black -tag b
   .mv.c create line 0 0 1 1 -fill black -tag a
-
+puts stderr "draw_depots 1.5"
   .mv.c create image 0 0 -image us -anchor nw -tag mooshoo
   .mv.c lower mooshoo e
+  puts stderr "draw_depots 1.7"
   .mv.c create line 0 $height $width $height -width 3 -fill red
+ puts stderr "draw_depots 1.8"
+  puts stderr "draw_depots 2"
 
   for {set i 1} {$i < $ndepots} {incr i} {
     plot_depot $i .mv.c
   }
 
+  puts stderr "draw_depots 3"
   for {set i 0} {$i < $nstrings} {incr i} {
     plot_string $i .mv.c
   }
+  puts stderr "draw_depots 4"
 
 }
 
@@ -505,10 +511,12 @@ proc Server_Accept {sock addr port} \
     set exnode("filedesc") $sock
     puts $sock "exNode Visualization 0.5"; flush $sock
 
-    # configure  for line operations
+	puts "before draw_depots" 
+	# configure  for line operations
     #fconfigure $sock -buffering line
 ##puts "NEW CONNECTION"
-    draw_depots
+    #draw_depots
+    puts "after draw_depots" 
     fileevent $sock readable [ list new_dispatch $sock ]
     incr config(connections)
     .mv.buttons.status configure -text "$config(connections) Active Connection(s)"

@@ -29,7 +29,7 @@ public class ClientPanel extends JPanel
 	public ClientPanel( LoDNClient client )
     {
         FormLayout layout = new FormLayout(
-            "3dlu,right:max(40dlu;p),3dlu,p,3dlu,p,3dlu,p,3dlu",
+            "3dlu,left:max(40dlu;p),3dlu,p,3dlu,p,3dlu,p,3dlu",
             "3dlu,p,3dlu,p, 3dlu,p,3dlu,p, 9dlu,p,3dlu,p,3dlu,p,3dlu,p,3dlu,p,    9dlu,p,3dlu,p,3dlu,p,   9dlu,p,3dlu" );
 
         layout.setRowGroups( new int[][]
@@ -60,6 +60,7 @@ public class ClientPanel extends JPanel
         
 // We'll re -add this after i can make it work        
         builder.add( client.closeAfterFinishedCheck, cc.xy( 2, 24 ) );
+        builder.add(client.useMapViewerCheckBox, cc.xy(2, 25));
 //--------------------------------------------
         
 //        builder.add( client.sizeLabel, cc.xy( 2, 24 ) );

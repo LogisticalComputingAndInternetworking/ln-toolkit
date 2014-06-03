@@ -605,7 +605,6 @@ public class ReadJob implements Job
                                 }
                             }
 
-                            // FIXME: This isn't synchronized
                             exnode.updateProgress( length, statusMsg );
                         }
                     }

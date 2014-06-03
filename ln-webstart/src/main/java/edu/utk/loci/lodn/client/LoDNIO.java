@@ -107,6 +107,7 @@ class LoDNIO
 					if(msghdr.remaining() != 0)
 					{
 						channel.read(msghdr, channel, this);
+						return;
 					}
 					
 					/* Switch the byte order to big endian for java */
@@ -130,7 +131,7 @@ class LoDNIO
 					final ByteBuffer payloadBuffer = 
 							ByteBuffer.allocate(size);
 	
-					channel.read(payloadBuffer, channel, 
+					channel.read(payloadBuffer, 60, TimeUnit.SECONDS, channel, 
 						new CompletionHandler<Integer, AsynchronousSocketChannel>() 
 						{
 							@Override
@@ -138,18 +139,17 @@ class LoDNIO
 									AsynchronousSocketChannel channel) 
 							{
 								System.out.printf("Read %d\n", result);
-		
-								System.out.printf("position %d, limit %d\n", payloadBuffer.position(), payloadBuffer.limit());
-								
+								System.out.printf("position %d, limit %d, remaining %d\n", 
+										payloadBuffer.position(), payloadBuffer.limit(), payloadBuffer.remaining());
+							
 								/* Not enough data read, so issuing another read */
 								if(payloadBuffer.position() != size)
 								{
-									while(true);
-									//channel.read(msghdr, channel, this);
+									channel.read(payloadBuffer, channel, this);
+									return;
 								}
 								
 								payloadBuffer.flip();
-		
 								
 								try
 								{

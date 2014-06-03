@@ -3,6 +3,7 @@
 package edu.utk.cs.loci.lodnclient;
 
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.CountDownLatch;
@@ -13,6 +14,7 @@ import javax.swing.JOptionPane;
 import edu.utk.cs.loci.exnode.Exnode;
 import edu.utk.cs.loci.exnode.Progress;
 import edu.utk.cs.loci.exnode.ProgressDialog;
+import edu.utk.loci.lorsviewer.LoRSViewer;
 
 public class DownloadAction extends AbstractAction
 {
@@ -57,6 +59,7 @@ public class DownloadAction extends AbstractAction
         if ( client.exnodes.length == 1 )
         { // ONE FILE ONLY IS DOWNLOADED
 
+        	
             try
             {
             	final Exnode exnode = client.exnodes[0];
@@ -68,8 +71,42 @@ public class DownloadAction extends AbstractAction
                 ProgressDialog progressDialog = new ProgressDialog( exnode, allDoneBarrier );
                 progressDialog.setVisible( true );
 
+                if(client.useMapViewer())
+                {
+                	final LoRSViewer lorsViewer = new LoRSViewer(8000);
+
+                	Thread viewerStartThread = new Thread(new Runnable()
+                	{
+                		@Override
+                		public void run() 
+                		{
+                			try
+                			{
+                				lorsViewer.start();
+
+                				lorsViewer.clear();
+                				lorsViewer.setSize(exnode.getLength());
+                				lorsViewer.setTitle(String.format("File: %s", outputFile));
+                				lorsViewer.setMessage("Download", 2);
+                				lorsViewer.setMessage("SetLoad", 1);
+
+                			}catch(IOException e)
+                			{
+                				e.printStackTrace();
+                			}						
+                		}
+                	});
+
+                	viewerStartThread.start();
+                	//viewerStartThread.join();
+
+
+                	LoDNClient.setLorsViewer(lorsViewer);
+                }
+                
                 t = new Thread( new Runnable()
                     {
+                	
                         public void run()
                         {
                             try
@@ -91,6 +128,14 @@ public class DownloadAction extends AbstractAction
                             exnode.progress.setDone();
                             exnode.progress.fireProgressChangedEvent();
                             exnode.progress.fireProgressDoneEvent();
+                            
+                            System.out.print("HERE");
+                            try {
+								LoDNClient.getLorsViewer().setMessage("Done", 1);
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
                         }
                     } );
                 t.start();
@@ -105,7 +150,6 @@ public class DownloadAction extends AbstractAction
                     null, "Please specify an input (1)", "Error",
                     JOptionPane.ERROR_MESSAGE );
             }
-
         }
         else
         { // SEVERAL FILES TO DOWNLOAD

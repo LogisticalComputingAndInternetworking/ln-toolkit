@@ -95,30 +95,33 @@ public class ProgressDialog extends JDialog implements ProgressListener
         ProgressDialogPanel panel = (ProgressDialogPanel) getContentPane();
         panel.progressBar.setIndeterminate( false );
 
-        String statusMsg = progress.getStatusMsg();
-        if ( statusMsg != null )
+        //String statusMsg = progress.getStatusMsg();
+        if(e.getStatusMsg() != null )
         {
-            panel.statusField.setText( statusMsg );
+        	synchronized (panel.statusField) 
+        	{
+        		panel.statusField.setText(e.getStatusMsg());
+			}      
         }
 
         Double totalProgress = new Double(
-            progress.getProgress() / 1024.0 / 1024.0 );
+            e.getTotal() / 1024.0 / 1024.0 );
         panel.totalField.setText( format.format( totalProgress ) );
 
-        Double throughput = new Double( progress.getThroughput() );
+        Double throughput = new Double(e.getThoughput());
         panel.throughputField.setText( format.format( throughput ) );
 
-        Double percentComplete = new Double( progress.getPercentComplete() );
+        Double percentComplete = new Double( e.getPercentComplete() );
         panel.percentField.setText( format.format( percentComplete ) );
 
-        int remaining = new Double( progress.getETA() ).intValue();
+        int remaining = new Double( e.getETA() ).intValue();
         int hours = remaining / 3600;
         int minutes = (remaining % 3600) / 60;
         int seconds = (remaining % 3600) % 60;
         String eta = new String( hours + " : " + minutes + " : " + seconds );
         panel.remainingField.setText( eta );
 
-        panel.progressBar.setValue( (int) progress.getPercentComplete() );
+        panel.progressBar.setValue( (int) e.getPercentComplete() );
 
         this.statDisplay.updateStats();
         this.threadDisplay.updateStats();
