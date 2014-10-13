@@ -1,10 +1,13 @@
 package edu.utk.loci.lodn.client;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.DirectoryStream;
+import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,6 +16,7 @@ import java.util.concurrent.Future;
 
 import com.google.protobuf.GeneratedMessage;
 
+import edu.utk.cs.loci.exnode.Exnode;
 import edu.utk.cs.loci.exnode.IdentityFunction;
 import edu.utk.cs.loci.exnode.IntegerMetadata;
 import edu.utk.cs.loci.exnode.Mapping;
@@ -382,14 +386,90 @@ public class LoDNSessionChannel
 		throw new UnsupportedOperationException();
 	}
 	
-	public <A> void exportExnodeFile(String path, ByteBuffer exnodeBuf, 
-			A attachment, CompletionHandler<?, A> completionHandler)
+	public <A> void exportExnodeFile(String path, A attachment, final CompletionHandler<Exnode, A> completionHandler)
 	{
-		throw new UnsupportedOperationException();
+        String[] elements = path.split("/");
+
+        final String filename = elements[elements.length-1];
+
+
+        this.getMappings(path, 0, Integer.MAX_VALUE, attachment, new CompletionHandler<Collection<Mapping>, A>()
+        {
+            @Override
+            public void completed(Collection<Mapping> mappings, A attachment)
+            {
+                //ByteBuffer exnodeBuffer = null;
+
+                Exnode exnode = new Exnode();
+
+                try(ByteArrayOutputStream exnodeStream = new ByteArrayOutputStream())
+                {
+                    /* Write the exnode header */
+//                    exnodeStream.write("<?xml version=\"1.0\"?>\n".getBytes());
+//                    exnodeStream.write("<exnode xmlns:exnode=\"http://loci.cs.utk.edu/exnode\">\n".getBytes());
+//                    exnodeStream.write("<exnode:metadata name=\"Version\" type=\"string\">3.0</exnode:metadata>\n".getBytes());
+//                    exnodeStream.write(("<exnode:metadata name=\"filename\" type=\"string\">"+ filename +"</exnode:metadata>\n").getBytes());
+//                    exnodeStream.write("<exnode:metadata name=\"lorsversion\" type=\"double\">0.828000</exnode:metadata>\n".getBytes());
+
+                    /* Write the mappings */
+                    for(Mapping mapping : mappings)
+                    {
+                       // exnodeStream.write(mapping.toXML().getBytes());
+
+                        exnode.addMapping(mapping);
+                    }
+
+                    /* Close it up */
+                   // exnodeStream.write("</exnode>".getBytes());
+
+                    /* Convert to a byte buffer */
+                   // exnodeBuffer = ByteBuffer.wrap(exnodeStream.toByteArray());
+
+
+                }catch(IOException e)
+                {
+                    completionHandler.failed(e, attachment);
+                    return;
+                }
+
+                /* Call the completion handler */
+                completionHandler.completed(exnode, attachment);
+            }
+
+            @Override
+            public void failed(Throwable exc, A attachment)
+            {
+                completionHandler.failed(exc, attachment);
+            }
+        });
 	}
 
-	public Future<ByteBuffer> exportExnodeFile(String path)
+	public Future<Exnode> exportExnodeFile(String path)
 	{
-		throw new UnsupportedOperationException();
+         /* Creates a Future for the mappings call result */
+        final LoDNClientFuture<Exnode> lodnClientFuture = new LoDNClientFuture<>();
+
+
+        /* Call the completeion handler version to actually do all of the work */
+        this.exportExnodeFile(path, lodnClientFuture,
+                new CompletionHandler<Exnode, LoDNClientFuture<Exnode>>()
+                {
+                    @Override
+                    public void completed(Exnode exnode, LoDNClientFuture<Exnode> loDNClientFuture)
+                    {
+                        lodnClientFuture.setResult(exnode, null);
+                    }
+
+                    @Override
+                    public void failed(Throwable exc, LoDNClientFuture<Exnode> loDNClientFuture)
+                    {
+                        /* Set failure with the exception */
+                        loDNClientFuture.setResult(null, exc);
+                    }
+                });
+
+
+        /* Return the lodn client future */
+        return lodnClientFuture;
 	}
 }
